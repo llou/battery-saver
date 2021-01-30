@@ -1,0 +1,113 @@
+#! /usr/bin/python3
+
+import sys
+import asyncio
+import kasa
+
+ALIAS = "plug-name"
+MIN_CHARGE = 70
+MAX_CHARGE = 80
+BATTERY = 'BAT0'
+
+# Battery
+
+
+def ip_finder(alias):
+    devices = asyncio.run(kasa.Discover.discover())
+    for ip, device in devices.items():
+        if device.alias == alias:
+            return ip
+    print("Unable to find device '%s'" % alias)
+    sys.exit(1)
+
+
+def get_power_supply_parameter(device, parameter):
+    with open('/sys/class/power_supply/%s/%s' % (device, parameter)) as data:
+        value = data.read()
+    return value
+
+
+def battery_read_current_charge(device=BATTERY):
+    return int(get_power_supply_parameter(device, 'charge_now'))
+
+
+def battery_read_full_charge(device=BATTERY):
+    return int(get_power_supply_parameter(device, 'charge_full'))
+
+
+def battery_reader(device=BATTERY):
+    charge = battery_read_current_charge(device=device)
+    full_charge = battery_read_full_charge(device=device)
+    return round(charge/full_charge*100)
+
+
+class BatterySaver:
+    def __init__(self, min_charge=70, max_charge=80, battery=BATTERY):
+        self.min_charge = min_charge
+        self.max_charge = max_charge
+        self.battery = battery
+
+    def check(self):
+        charge = battery_reader(self.battery)
+        if charge < self.min_charge:
+            print("Current charge %d%%" % charge)
+            self._run_low()
+        if charge > self.max_charge:
+            print("Current charge %d%%" % charge)
+            self._run_high()
+
+    def _run_low(self):
+        print("System running low on battery")
+        return self.run_low()
+
+    def _run_high(self):
+        print("System running high on battery")
+        return self.run_high()
+
+    def run_low(self):
+        pass
+
+    def run_high(self):
+        pass
+
+# Plug
+
+
+class Plug:
+
+    def __init__(self):
+        self._ip = ip_finder(ALIAS)
+        self._plug = kasa.SmartPlug(self._ip)
+
+    def turn_on(self):
+        print("Plug turning on")
+        asyncio.run(self._plug.turn_on())
+
+    def turn_off(self):
+        print("Plug turning off")
+        asyncio.run(self._plug.turn_off())
+
+
+class MiBateria(BatterySaver):
+    def __init__(self, plug):
+        super().__init__()
+        self.plug = plug
+
+    def run_low(self):
+        self.plug.turn_on()
+
+    def run_high(self):
+        self.plug.turn_off()
+
+
+if __name__ == '__main__':
+    p = Plug()
+    if len(sys.argv) == 1 or sys.argv[1] == 'check':
+        bateria = MiBateria(p)
+        bateria.check()
+
+    elif sys.argv[1] == 'off':
+        p.turn_off()
+
+    elif sys.argv[1] == 'status':
+        print("Battery status: %d%%" % battery_reader())

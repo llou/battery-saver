@@ -1,0 +1,12 @@
+[Unit]
+Description=Battery charge controller
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/battery-saver
+User=nobody
+Group=systemd-journal
+
+[Install]
+WantedBy=timers.target

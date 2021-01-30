@@ -1,0 +1,13 @@
+[Unit]
+Description=Halt battery charging on shutdown
+After=network.target 
+Requires=network.target 
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+ExecStop=/usr/local/bin/battery-saver off
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target
