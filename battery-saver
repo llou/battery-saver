@@ -5,8 +5,8 @@ import asyncio
 import kasa
 
 ALIAS = "plug-name"
-MIN_CHARGE = 70
-MAX_CHARGE = 80
+MIN_CHARGE = 10 
+MAX_CHARGE = 90
 BATTERY = 'BAT0'
 
 # Battery
@@ -42,7 +42,8 @@ def battery_reader(device=BATTERY):
 
 
 class BatterySaver:
-    def __init__(self, min_charge=70, max_charge=80, battery=BATTERY):
+    def __init__(self, min_charge=MIN_CHARGE, max_charge=MAX_CHARGE,
+                 battery=BATTERY):
         self.min_charge = min_charge
         self.max_charge = max_charge
         self.battery = battery
